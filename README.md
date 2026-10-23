@@ -36,8 +36,11 @@ Close the window to quit. The window, gun position and map are remembered in
 
 ## Setup
 
-Windows, Python 3.13, at 2560×1440. The screen boxes in the `hud_*.py` modules are set for that
-resolution.
+Windows, Python 3.13. The screen boxes in the `hud_*.py` modules were measured at 2560×1440; on
+another 16:9 resolution (1920×1080, 3840×2160, ...) each grab is resampled to that size, so the
+readers see the frame they were built on. Only 2560×1440 has been checked in game, and 1080p is
+the likeliest to misread (its HUD has fewer pixels to upscale from). Other aspect ratios
+(ultrawide, 16:10) are not supported yet: the game places HUD elements from different screen edges.
 
 ```
 pip install -r requirements.txt

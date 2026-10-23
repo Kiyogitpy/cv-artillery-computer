@@ -156,12 +156,6 @@ def near_tape(box):
     return (None, why) if deg is None else ((deg + TAPE_MINUS_BOX) % 360, "")
 
 
-def grab_box(sct, game):
-    x, y, w, h = BOX
-    return cv2.cvtColor(np.asarray(sct.grab({"left": game["left"] + x, "top": game["top"] + y,
-                                              "width": w, "height": h})), cv2.COLOR_BGRA2BGR)
-
-
 def build(sample_dir=SAMPLES, out=DIGITS):
     """Store every labelled cell from samples named c<degrees>_<anything>.png (BOX crops), after
     dropping frames whose three digits all look like another number's (a wrong label: the tape
@@ -216,7 +210,7 @@ def record(start_bearing, seconds, out_dir=SAMPLES, every_s=0.1):
                 if b is not None:
                     if hull is None:
                         hull = (b.deg - tilt.turret_deg) % 360
-                    box = grab_box(reader.sct, reader.game)
+                    box = reader.grab_box(BOX)
                     truth = b.deg - TAPE_MINUS_BOX
                     frac = truth - np.floor(truth)
                     if abs(frac - 0.5) < 0.12:         # too close to where the box flips to the next degree

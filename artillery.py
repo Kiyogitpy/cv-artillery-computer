@@ -135,6 +135,8 @@ HULL_TOL_DEG = 3.0       # a tape reading within this of hull heading + turret i
 HULL_MOVED_DEG = 2.0     # pitch or roll this far from where the heading was anchored: the hull moved
 HULL_LOST_READS = 8      # ...and this many readings in a row that are not: the hull turned, re-anchor
 RIBBON = (860, 28, 840, 36)  # x, y, w, h on the frame: the top compass ribbon (recorded, not read yet)
+REF_HEIGHT = 1440        # every box and pixel size in the hud_* modules was measured on a 2560x1440 frame;
+                         # another 16:9 screen is grabbed and resampled to that (Reader.grab)
 # The tape's 15-degree step is taken on its own evidence only with CONFIRM_VIEWS views leading by
 # CONFIRM_LEAD (the box is wrong 12% of reads: three views are enough to show a step, not to
 # trust); a fresh minimap heading that lands on the step confirms it at once.
@@ -174,69 +176,70 @@ class Reader:
         self.sct = mss.mss()
         self.virtual = self.sct.monitors[0]
         self.game = primary_monitor(self.sct.monitors)
+        self.scale = self.game["height"] / REF_HEIGHT    # screen px per reference px
+
+    def grab(self, left, top, w, h):
+        """BGR of the screen from (left, top) covering w x h REFERENCE pixels, resampled to w x h:
+        on another 16:9 resolution the readers still see the frame they were measured on."""
+        s = self.scale
+        shot = cv2.cvtColor(np.asarray(self.sct.grab(
+            {"left": left, "top": top, "width": round(w * s), "height": round(h * s)})), cv2.COLOR_BGRA2BGR)
+        if shot.shape[:2] == (h, w):
+            return shot
+        return cv2.resize(shot, (w, h), interpolation=cv2.INTER_AREA if s > 1 else cv2.INTER_CUBIC)
+
+    def grab_box(self, box):
+        """A box (x, y, w, h on the reference frame) of the game's screen, BGR."""
+        x, y, w, h = box
+        return self.grab(self.game["left"] + round(x * self.scale), self.game["top"] + round(y * self.scale), w, h)
 
     def read_tilt(self, need_turret=True):
         """The tilt dial at the bottom of the game screen: (hud_tilt.Tilt or None, why)."""
-        x, y, w, h = hud_tilt.BOX
-        crop = cv2.cvtColor(np.asarray(self.sct.grab(
-            {"left": self.game["left"] + x, "top": self.game["top"] + y, "width": w, "height": h})),
-            cv2.COLOR_BGRA2BGR)
+        crop = self.grab_box(hud_tilt.BOX)
         self.last_tilt = crop                    # recorded with the bearing (--record-bearing)
         return hud_tilt.read(crop, need_turret)
 
     def read_bearing(self):
         """The gun view's bearing tape as one observation for hud_bearing.StepTracker:
         (hud_bearing.TapeObs with the compass box's scores filled in, "") or (None, why)."""
-        x, y, w, h = hud_bearing.BOX
-        crop = cv2.cvtColor(np.asarray(self.sct.grab(
-            {"left": self.game["left"] + x, "top": self.game["top"] + y, "width": w, "height": h})),
-            cv2.COLOR_BGRA2BGR)
+        crop = self.grab_box(hud_bearing.BOX)
         obs, why = hud_bearing.observe(crop)
         self.last_tape, self.last_box = crop, None
         if obs is None:
             return None, why
         if hud_compass.has_samples():
-            self.last_box = hud_compass.grab_box(self.sct, self.game)
+            self.last_box = self.grab_box(hud_compass.BOX)
             obs.compass, _ = hud_compass.totals(self.last_box, obs.candidates())
         return obs, ""
 
     def grab_ribbon(self):
         """The top compass ribbon (its white labels every 15 degrees and the box), for recording:
         USER 2026-10-12, they read where the tape's black labels cannot."""
-        x, y, w, h = RIBBON
-        return cv2.cvtColor(np.asarray(self.sct.grab(
-            {"left": self.game["left"] + x, "top": self.game["top"] + y, "width": w, "height": h})),
-            cv2.COLOR_BGRA2BGR)
+        return self.grab_box(RIBBON)
 
     def read_mil(self):
         """The gun view's MIL scale: (hud_mil.Mil or None, why)."""
-        x, y, w, h = hud_mil.BOX
-        crop = cv2.cvtColor(np.asarray(self.sct.grab(
-            {"left": self.game["left"] + x, "top": self.game["top"] + y, "width": w, "height": h})),
-            cv2.COLOR_BGRA2BGR)
+        crop = self.grab_box(hud_mil.BOX)
         self.last_mil = crop
         return hud_mil.read(crop)
 
     def read(self):
         cx, cy = cursor()
         dx, dy, w, h = map_coords.GRAB
-        v = self.virtual
-        left = max(v["left"], min(cx + dx, v["left"] + v["width"] - w))
-        top = max(v["top"], min(cy + dy, v["top"] + v["height"] - h))
-        crop = cv2.cvtColor(np.asarray(self.sct.grab(
-            {"left": left, "top": top, "width": w, "height": h})), cv2.COLOR_BGRA2BGR)
-        return (cx, cy), map_coords.read(crop, (cx, cy), origin=(left, top))
+        s, v = self.scale, self.virtual
+        left = max(v["left"], min(cx + round(dx * s), v["left"] + v["width"] - round(w * s)))
+        top = max(v["top"], min(cy + round(dy * s), v["top"] + v["height"] - round(h * s)))
+        crop = self.grab(left, top, w, h)
+        return (cx, cy), map_coords.read(crop, (round((cx - left) / s), round((cy - top) / s)))
 
     def grab_minimap(self):
         """The minimap square of the game's screen (minimap.MM), BGR."""
-        x, y, w, h = minimap.MM
-        return cv2.cvtColor(np.asarray(self.sct.grab(
-            {"left": self.game["left"] + x, "top": self.game["top"] + y, "width": w, "height": h})),
-            cv2.COLOR_BGRA2BGR)
+        return self.grab_box(minimap.MM)
 
     def grab_game(self):
-        """The game's whole screen, BGR."""
-        return cv2.cvtColor(np.asarray(self.sct.grab(self.game)), cv2.COLOR_BGRA2BGR)
+        """The game's whole screen at the reference size, BGR (F5 captures are read like 1440p ones)."""
+        g = self.game
+        return self.grab(g["left"], g["top"], round(g["width"] / self.scale), REF_HEIGHT)
 
     def save_debug(self, at, why):
         """Whole virtual screen + the reason, named for the cursor point; written on a thread."""

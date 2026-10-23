@@ -1345,3 +1345,61 @@ def test_a_wrong_first_turret_read_does_not_lock_in(tmp_path, monkeypatch):
         assert abs(app.tilt.turret_deg - 5.0) < 1.0
     finally:
         root.destroy()
+
+
+def _screen_reader(height, monkeypatch):
+    """artillery.Reader over a fake 16:9 screen `height` px tall: a horizontal ramp plus a
+    vertical one, so any wrong offset or size shows in the pixels a box comes back with."""
+    import numpy as np
+    import artillery
+    w = height * 16 // 9
+    ys, xs = np.mgrid[0:height, 0:w]
+    screen = np.dstack([(xs * 255 // w), (ys * 255 // height), np.zeros_like(xs), np.full_like(xs, 255)]).astype(np.uint8)
+
+    class Sct:
+        grabs = []
+
+        def grab(self, r):
+            self.grabs.append(r)
+            return screen[r["top"]:r["top"] + r["height"], r["left"]:r["left"] + r["width"]]
+
+    r = artillery.Reader.__new__(artillery.Reader)
+    r.sct, r.virtual = Sct(), {"left": 0, "top": 0, "width": w, "height": height}
+    r.game = dict(r.virtual)
+    r.scale = height / artillery.REF_HEIGHT
+    monkeypatch.setattr(artillery, "cursor", lambda: (w // 2, height // 2))
+    return r, screen
+
+
+def test_reader_grabs_unscaled_at_1440p(monkeypatch):
+    import hud_mil
+    r, screen = _screen_reader(1440, monkeypatch)
+    x, y, w, h = hud_mil.BOX
+    assert (r.grab_box(hud_mil.BOX) == screen[y:y + h, x:x + w, :3]).all()
+    assert r.sct.grabs[-1] == {"left": x, "top": y, "width": w, "height": h}
+
+
+def test_reader_resamples_other_16x9_screens_to_the_reference_box(monkeypatch):
+    import hud_bearing, hud_mil, hud_tilt, minimap
+    ref, _ = _screen_reader(1440, monkeypatch)
+    for height in (1080, 2160):
+        r, _ = _screen_reader(height, monkeypatch)
+        for box in (hud_mil.BOX, hud_bearing.BOX, hud_tilt.BOX, minimap.MM):
+            got, want = r.grab_box(box).astype(int), ref.grab_box(box).astype(int)
+            assert got.shape == want.shape
+            assert abs(got - want).max() <= 3, (height, box)     # the ramps: ~1 px of offset at most
+        assert r.grab_game().shape == (1440, 2560, 3)
+
+
+def test_reader_map_read_finds_the_cursor_in_the_resampled_crop(monkeypatch):
+    import artillery
+    import map_coords
+    seen = {}
+    monkeypatch.setattr(map_coords, "read", lambda crop, cursor, origin=(0, 0): seen.update(
+        shape=crop.shape, cursor=cursor) or map_coords.Reading(None, None))
+    dx, dy, w, h = map_coords.GRAB
+    for height in (1080, 1440, 2160):
+        r, _ = _screen_reader(height, monkeypatch)
+        r.read()
+        assert seen["shape"] == (h, w, 3)
+        assert seen["cursor"] == (-dx, -dy), height
