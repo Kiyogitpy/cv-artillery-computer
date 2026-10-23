@@ -76,4 +76,14 @@ The ballistics are a Python port of
 vendored in `wardogs/`; see [`wardogs/VENDORED.md`](wardogs/VENDORED.md) and
 [`wardogs/LICENSE`](wardogs/LICENSE).
 
+The range tables in `wardogs/` are the calculator's measurements; they are not derived from the game's
+files. [wardogs-data-docs](https://github.com/Kiyogitpy/wardogs-data-docs) documents how the game itself
+flies a 155 mm shell (gravity, drag, launch speed, from the game's data and code, with its sources and
+limits) in its
+[projectile flight](https://github.com/Kiyogitpy/wardogs-data-docs/blob/main/pipelines/Wardogs_ProjectileFlight_v1.md)
+page, and
+[checks that model against logged impacts and these tables](https://github.com/Kiyogitpy/wardogs-data-docs/blob/main/docs/evidence/round21-artillery-range-check.md).
+The model comes within about 60 m of logged impacts with no fitted parameters under stated assumptions,
+and does not reproduce the tables exactly, so the tables here are still the calculator's.
+
 Wardogs is a game by Bulkhead, published by Team17. This project is not affiliated with either.
