@@ -1,0 +1,14 @@
+__pycache__/
+.pytest_cache/
+
+# your own runs
+artillery_state.json
+artillery_state.json.tmp
+shots.csv
+debug/
+
+# game data and screenshots: not redistributable, supply your own (see README)
+test_shots/
+maps/
+wardogs/terrain_src/*
+!wardogs/terrain_src/SOURCE.md

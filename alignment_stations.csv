@@ -1,0 +1,10 @@
+time,map,x,y,heading,pitch_deg,roll_deg,turret_deg,note,gun_time
+2026-09-30 18:13:50,bakurani,83.81,32.12,203,13.63,0.0,0.5,"F5 on the icon, base pad south slope",
+2026-09-30 18:25:42,bakurani,79.56,29.39,22.0,5.84,2.7,1.2,user station 3,1790785490.7575393
+2026-09-30 18:30:50,bakurani,79.12,30.73,303.0,-9.09,0.8,-0.5,user station 4 (heading corrected 305 -> 303 by the user),1790785835.3024046
+2026-09-30 18:32:29,bakurani,78.79,31.25,358.0,-3.9,9.55,1.5,"user station 5, driver view (heading corrected 158 -> 358 by the user)",1790785932.2708635
+2026-09-30 18:34:14,bakurani,79.39,35.4,305.0,-5.52,-6.2,1.5,"user station 6, driver view",1790786040.2854295
+2026-09-30 18:39:24,bakurani,76.42,45.42,41.0,2.68,5.9,145.0,"user station 8, driver view",1790786343.1613586
+2026-09-30 18:40:42,bakurani,76.03,48.27,347.0,17.85,6.4,1.0,"user station 9, driver view, aggressive slope",1790786426.9020786
+2026-09-30 18:44:30,bakurani,76.6,51.22,277.0,5.52,-25.8,1.5,"user station 10, driver view, steep roll",1790786560.5150518
+2026-09-30 18:46:54,bakurani,74.86,51.6,8.0,-1.95,12.8,,"user station 11, driver view, final",1790786726.0941796
