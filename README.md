@@ -46,14 +46,14 @@ python artillery.py
 
 ### Data you need to supply
 
-The game data the tool matches against is **not in this repository**. It isn't mine to
-redistribute:
-
-- **Terrain heights** in `wardogs/terrain_src/<map>/`. See
+- **Terrain heights** (not included: they aren't mine to redistribute) in `wardogs/terrain_src/<map>/`. See
   [`wardogs/terrain_src/SOURCE.md`](wardogs/terrain_src/SOURCE.md) for the format and where it
   comes from. Without them, the mils assume level ground and the window says so.
-- **Map terrain exports** in `maps/<map>_map.png`, for minimap matching. Build the cache once
-  with `python minimap.py --build`. Without them, store the gun with F2 by hand.
+- **Map terrain exports** for minimap matching are attached to the
+  [latest release](https://github.com/Kiyogitpy/cv-artillery-computer/releases/latest)
+  (`bakurani_map.png`, `ozeti_map.png`, `zesty_map.png`, 0.4–1.6 GB each). Put them in `maps/`,
+  then build the cache once with `python minimap.py --build`. Without them, store the gun with
+  F2 by hand.
 
 ## Tests
 
@@ -63,6 +63,11 @@ python -m pytest
 
 Some tests check the readers against recorded screenshots (`test_shots/`) and the terrain data.
 Those files aren't included, so those tests fail in a fresh clone. The rest run on their own.
+
+## Licence
+
+MIT, see [`LICENSE`](LICENSE). The vendored calculator tables in `wardogs/` keep their own MIT
+licence.
 
 ## Credits
 
